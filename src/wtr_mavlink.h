@@ -2,7 +2,7 @@
  * @file wtr_mavlink.h
  * @author X. Y.
  * @brief 移植到 stm32 的 mavlink（只需要包含这个头文件就够了）
- * @version 1.0
+ * @version 1.1
  * @date 2022-09-23
  *
  * @copyright Copyright (c) 2022
@@ -109,6 +109,53 @@ int wtrMavlink_StartReceiveIT(mavlink_channel_t chan);
 void wtrMavlink_MsgRxCpltCallback(mavlink_message_t *msg);
 
 /**
+ * @brief 使用方法同 HAL_UART_Receive_IT。HAL 库中的这个函数在同时收发时会出现锁死现象，这个函数取消了加锁解锁操作，修复了锁死 Bug
+ *
+ * @param huart
+ * @param pData
+ * @param Size
+ * @return HAL_StatusTypeDef
+ */
+static inline HAL_StatusTypeDef WTR_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size)
+{
+    /* Check that a Rx process is not already ongoing */
+    if (huart->RxState == HAL_UART_STATE_READY) {
+        if ((pData == NULL) || (Size == 0U)) {
+            return HAL_ERROR;
+        }
+
+        /* Process Locked */
+        // __HAL_LOCK(huart);
+
+        /* Set Reception type to Standard reception */
+        huart->ReceptionType = HAL_UART_RECEPTION_STANDARD;
+
+        huart->pRxBuffPtr    = pData;
+        huart->RxXferSize    = Size;
+        huart->RxXferCount   = Size;
+
+        huart->ErrorCode     = HAL_UART_ERROR_NONE;
+        huart->RxState       = HAL_UART_STATE_BUSY_RX;
+
+        /* Process Unlocked */
+        //   __HAL_UNLOCK(huart);
+
+        /* Enable the UART Parity Error Interrupt */
+        __HAL_UART_ENABLE_IT(huart, UART_IT_PE);
+
+        /* Enable the UART Error Interrupt: (Frame error, noise error, overrun error) */
+        __HAL_UART_ENABLE_IT(huart, UART_IT_ERR);
+
+        /* Enable the UART Data Register not empty Interrupt */
+        __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);
+
+        return HAL_OK;
+    } else {
+        return HAL_BUSY;
+    }
+}
+
+/**
  * @brief 这个函数需要在 HAL_UART_RxCpltCallback 中调用
  *
  * @param huart 收到数据的串口（函数内部有判断，只有这个 huart 是 channel 对应的 huart 时，该函数才会处理）
@@ -120,7 +167,7 @@ static inline void wtrMavlink_UARTRxCpltCallback(UART_HandleTypeDef *huart, mavl
         if (mavlink_parse_char(chan, hMAVLink[chan].rx_buffer, &(hMAVLink[chan].msg), &(hMAVLink[chan].status))) {
             wtrMavlink_MsgRxCpltCallback(&(hMAVLink[chan].msg));
         }
-        HAL_UART_Receive_IT(huart, &(hMAVLink[chan].rx_buffer), 1);
+        WTR_UART_Receive_IT(huart, &(hMAVLink[chan].rx_buffer), 1);
     }
 }
 

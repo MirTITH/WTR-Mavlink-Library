@@ -1,6 +1,6 @@
 # WTR Mavlink Library
 
-HITsz WTRobot
+WTRobot, HITsz
 
 ## 介绍
 
@@ -156,6 +156,9 @@ X. Y.
 - gitee: [TITHChan (tithchan) - Gitee.com](https://gitee.com/tithchan)
 
 ## 版本日志
+
+### 1.1
+- 修复同时收发时可能的卡串口问题
 
 ### 1.0
 - 优化性能

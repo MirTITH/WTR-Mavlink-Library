@@ -2,7 +2,7 @@
  * @file wtr_mavlink.c
  * @author X. Y.
  * @brief 移植到 stm32 的 mavlink（只需要包含 wtr_mavlink.h 就够了）
- * @version 0.5
+ * @version 1.1
  * @date 2022-09-23
  *
  * @copyright Copyright (c) 2022
@@ -24,7 +24,7 @@ int wtrMavlink_StartReceiveIT(mavlink_channel_t chan)
         return -1;
     }
 
-    return HAL_UART_Receive_IT(hMAVLink[chan].huart, &(hMAVLink[chan].rx_buffer), 1);
+    return WTR_UART_Receive_IT(hMAVLink[chan].huart, &(hMAVLink[chan].rx_buffer), 1);
 }
 
 __weak void wtrMavlink_MsgRxCpltCallback(mavlink_message_t *msg)
