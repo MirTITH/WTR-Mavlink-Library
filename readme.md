@@ -112,8 +112,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 在你喜欢的位置（如 main.c）定义如下函数：
 
-> 你也可以通过 `msg->sysid` 和 `msg->compid` 判断消息是从哪里来的
-
 ```c
 /**
  * @brief 接收到完整消息且校验通过后会调用这个函数。在这个函数里调用解码函数就可以向结构体写入收到的数据
@@ -137,6 +135,8 @@ void wtrMavlink_MsgRxCpltCallback(mavlink_message_t *msg)
     }
 }
 ```
+
+> 以上代码通过 `msg->msgid` 判断是哪个消息，还可以通过 `msg->sysid` 和 `msg->compid` 判断消息是从哪里来的
 
 ## 更多 example
 
