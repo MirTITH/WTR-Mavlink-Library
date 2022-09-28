@@ -34,8 +34,9 @@ MAVLink 官网: <https://mavlink.io/zh/>
 
 #### 生成库文件
 
-> 需先安装 python 环境  
-> 安装 python 参考 <https://mavlink.io/zh/getting_started/installation.html>
+> 需先安装 python 和一些模块  
+> 安装参考 <https://mavlink.io/zh/getting_started/installation.html>  
+> 上面的链接中，Windows 下只需要装好 python 和 future 模块就行了，Linux 下可能还要安装 TkInter
 
 1. 打开 `mavlink_generator/mavgenerate.py` 
    - XML 选择你刚刚编写的 XML 文件
