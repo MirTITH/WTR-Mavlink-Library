@@ -6,39 +6,71 @@ WTRobot, HITsz
 
 移植到 stm32 平台的 mavlink
 
-MAVLink 支持自定义消息，因此可以用来通过串口传输结构体，并且自带校验。
+MAVLink 是一套消息传输协议。可以使用它方便地在单片机直接传输信息（变量、结构体等），并且有校验机制，可以检测并丢弃传输错误的包。
 
 本库针对 MavLink V1 版本编写。
 
 MAVLink 官网: <https://mavlink.io/zh/>
 
+## 安装 mavlink
+
+### 获取 mavlink
+
+方法一：克隆或下载本仓库，里面的 `mavlink_1.0.12` 文件夹就是 1.0.12 版本的 mavlink 生成器
+
+方法二：从官方库中下载：
+
+1. clone 官方库
+    ```
+    git clone https://github.com/mavlink/mavlink.git --recursive
+    ```
+2. 切换到 release 版本
+    ```
+    cd mavlink
+    git checkout 1.0.12
+    ```
+
+> 可以输入 `git tag` 查看有哪些版本，写本文档时的最新版是 1.0.12
+
+### 安装环境
+
+使用 mavlink 生成消息前，需要安装 python 和一些模块
+
+> 安装参考 <https://mavlink.io/zh/getting_started/installation.html>  
+> 上面的链接中，Windows 下只需要装好 python 和 future 模块就行了，Linux 下可能还要安装 TkInter
+
 ## 开始上手
 
-### 生成带有自定义消息的 mavlink 库文件
+### 生成自定义消息
+
+消息就是你要发送和接收的一组变量。
+
+消息在 xml 文件中定义。mavlink 会根据 xml 文件生成对应的结构体以及收发函数。使用 mavlink 通信前需要先定义消息，通信的双方也需要有相同的消息定义。
 
 #### 编写 `.xml` 文件
 
-注意：消息 ID 介于 0 到 255 之间
+可以仿照以下文件编写 `.xml`：
 
-可以参考以下文件：
+[wtr_mavlink_demo.xml](examples/stm32f103cbt6/UserCode/mavlink/wtr_mavlink_demo.xml)
 
-[wtr_mavlink_demo.xml](mavlink_generator/message_definitions/v1.0/wtr_mavlink_demo.xml)
+[test.xml](examples/test.xml)
 
-[test.xml](mavlink_generator/message_definitions/v1.0/test.xml)
+> 注意：消息 ID 必须介于 0 到 255 之间  
+> 建议将你写的 xml 文件也放在你的工程目录中，以免以后修改时找不到之前写的文件
+> 
+> mavlink 官方有一些预定义好的消息（放在这里 [mavlink/message_definitions/v1.0](mavlink/message_definitions/v1.0)）。这些消息是官方预设的无人机通信消息，如果不玩无人机就基本上用不到。
 
-详细介绍见官方文档: 
+详细语法见官方文档: 
 
 <https://mavlink.io/zh/guide/xml_schema.html>
 
 <https://mavlink.io/zh/guide/define_xml_element.html>
 
-#### 生成库文件
 
-> 需先安装 python 和一些模块  
-> 安装参考 <https://mavlink.io/zh/getting_started/installation.html>  
-> 上面的链接中，Windows 下只需要装好 python 和 future 模块就行了，Linux 下可能还要安装 TkInter
 
-1. 打开 `mavlink_generator/mavgenerate.py` 
+#### 根据 xml 文件生成库文件
+
+1. 打开 `mavlink/mavgenerate.py` 
    - XML 选择你刚刚编写的 XML 文件
    - Out 选择你想要存放库文件的目录
    - Language 选择 C
@@ -70,7 +102,15 @@ MAVLink 官网: <https://mavlink.io/zh/>
 
 ## 使用 WTR Mavlink Library
 
+使用 mavlink 相关函数前，需要 `#include "wtr_mavlink.h"`
+
+> 只需要包含 `wtr_mavlink.h` 这一个文件就行了，不用包含 mavlink 的其他头文件
+
 ### 绑定通道和串口
+
+使用 mavlink 的通道前需要先绑定串口，之后对这个通道的发送和接收操作就相当于对串口的操作（串口要在 CubeMX 里先配置好）
+
+一般一个通道对应一个串口，一个通道可以同时收发，通道的数量取决于你上面定义的 `MAVLINK_COMM_NUM_BUFFERS`
 
 examples:
 
@@ -81,62 +121,69 @@ wtrMavlink_BindChannel(&huart2, MAVLINK_COMM_1);
 
 ### 发送结构体
 
-examples:
+mavlink 将你自定义的消息都封装在了结构体里，一个消息对应一个结构体
+
+如名字为 `speed` 的消息在 `mavlink_speed_t` 中
+
+本库采用阻塞式发送，使用如下函数发送结构体（记得绑定通道和串口）：
 
 ```
-mavlink_msg_xxx_send_struct(MAVLINK_COMM_1, &StructToBeSend);
+// 向通道X发送结构体，（X要改为对应的数字）
+mavlink_msg_xxx_send_struct(MAVLINK_COMM_X, &StructToBeSend);
 ```
 
-> xxx 为要发送的消息名称（消息都是封装在结构体里的）
+> xxx 为要发送的消息名称
 
 ### 接收结构体
 
-本库采用中断接收模式，所以必须打开串口全局中断
+本库采用中断接收模式，因此如果需要接收消息，必须在 CubeMX 里使能串口全局中断
 
-examples:
+接收结构体需要如下操作：
 
-在 main.c 中：
-```c
-// 开启通道0的接收中断
-wtrMavlink_StartReceiveIT(MAVLINK_COMM_0);
-```
+1. 确保已经绑定通道和串口
 
-在中断回调函数中：
-```c
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-    // 接收通道0的消息
-    wtrMavlink_UARTRxCpltCallback(huart, MAVLINK_COMM_0);
-}
-```
+2. 在代码中调用：
+    ```c
+    // 启动通道X对应串口的中断接收
+    wtrMavlink_StartReceiveIT(MAVLINK_COMM_X);
+    ```
 
-在你喜欢的位置（如 main.c）定义如下函数：
-
-```c
-/**
- * @brief 接收到完整消息且校验通过后会调用这个函数。在这个函数里调用解码函数就可以向结构体写入收到的数据
- *
- * @param msg 接收到的消息
- * @return
- */
-void wtrMavlink_MsgRxCpltCallback(mavlink_message_t *msg)
-{
-    switch (msg->msgid) {
-        case 1:
-            // id = 1 的消息对应的解码函数(mavlink_msg_xxx_decode)
-            mavlink_msg_xxx_decode(msg, &StructReceived);
-            break;
-        case 2:
-            // id = 2 的消息对应的解码函数(mavlink_msg_xxx_decode)
-            break;
-        // ......
-        default:
-            break;
+3. 在中断回调函数中：
+    ```c
+    void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+    {
+        // 接收通道X的消息
+        wtrMavlink_UARTRxCpltCallback(huart, MAVLINK_COMM_X);
     }
-}
-```
+   ```
 
-> 以上代码通过 `msg->msgid` 判断是哪个消息，还可以通过 `msg->sysid` 和 `msg->compid` 判断消息是从哪里来的
+4. 在你喜欢的位置（如 main.c）定义如下函数：
+
+    ```c
+    /**
+     * @brief 接收到完整消息且校验通过后会调用这个函数。在这个函数里调用解码函数就可以向结构体写入收到的数据
+     *
+     * @param msg 接收到的消息
+     * @return
+     */
+    void wtrMavlink_MsgRxCpltCallback(mavlink_message_t *msg)
+    {
+        switch (msg->msgid) {
+            case 1:
+                // id = 1 的消息对应的解码函数(mavlink_msg_xxx_decode)
+                mavlink_msg_xxx_decode(msg, &StructReceived);
+                break;
+            case 2:
+                // id = 2 的消息对应的解码函数(mavlink_msg_xxx_decode)
+                break;
+            // ......
+            default:
+                break;
+        }
+    }
+    ```
+
+    > 以上代码通过 `msg->msgid` 判断是哪个消息，还可以通过 `msg->sysid` 和 `msg->compid` 判断消息是从哪里来的
 
 ## 更多 example
 
