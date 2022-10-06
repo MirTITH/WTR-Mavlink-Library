@@ -127,7 +127,7 @@ mavlink 将你自定义的消息都封装在了结构体里，一个消息对应
 
 本库采用阻塞式发送，使用如下函数发送结构体（记得绑定通道和串口）：
 
-```
+```c
 // 向通道X发送结构体，（X要改为对应的数字）
 mavlink_msg_xxx_send_struct(MAVLINK_COMM_X, &StructToBeSend);
 ```
