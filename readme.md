@@ -8,7 +8,7 @@ WTRobot, HITsz
 
 MAVLink 是一套消息传输协议。可以使用它方便地在单片机直接传输信息（变量、结构体等），并且有校验机制，可以检测并丢弃传输错误的包。
 
-本库针对 MavLink V1 版本编写。
+本库支持 MavLink V1 和 V2 版本。
 
 MAVLink 官网: <https://mavlink.io/zh/>
 
@@ -55,7 +55,7 @@ MAVLink 官网: <https://mavlink.io/zh/>
 
 [test.xml](examples/test.xml)
 
-> 注意：消息 ID 必须介于 0 到 255 之间  
+> 注意：V1 版本的消息 ID 必须介于 0 到 255 之间  
 > 建议将你写的 xml 文件也放在你的工程目录中，以免以后修改时找不到之前写的文件
 > 
 > mavlink 官方有一些预定义好的消息（放在这里 [mavlink/message_definitions/v1.0](mavlink/message_definitions/v1.0)）。这些消息是官方预设的无人机通信消息，如果不玩无人机就基本上用不到。
@@ -74,7 +74,7 @@ MAVLink 官网: <https://mavlink.io/zh/>
    - XML 选择你刚刚编写的 XML 文件
    - Out 选择你想要存放库文件的目录
    - Language 选择 C
-   - Protocol 选择 1.0
+   - Protocol 选择 1.0 或 2.0（看你需求，版本区别官网上有说明）
 2. Generate
 
 ### 移植到 stm32
