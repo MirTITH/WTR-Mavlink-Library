@@ -112,10 +112,10 @@ MAVLink 官网: <https://mavlink.io/zh/>
 
     MAVLink 支持多个系统互相通信。系统可以是上位机、机器人、遥控器、无人机等。一般建议为每个系统分配唯一的 `System ID`。如果一个系统上有多个单片机，建议为每个单片机分配唯一的 `Component ID`。
 
-    > 这两个 ID 只是为了区分收到的消息来自哪里，如果不需要区分，可以都取相同 ID。（但不太建议）  
+    > 这两个 ID 只是为了让接收方知道消息是谁发过来的。
     > MAVLink 原本设想的是为系统上的每个组件（比如说各种传感器）分配一个 `Component ID`，但这里的 mavlink_system 是全局变量，一个单片机不方便设置多个 `Component ID`，所以只能每个单片机分配一个 `Component ID` 了。
 
-    > `MAVLINK_COMM_NUM_BUFFERS` 是 MAVLink 最大可用的通道数。通常一个通道对应一个串口。请根据需要分配。设置得越大会占用越多内存。MAVLink 默认为单片机使用 4 个通道。
+    > `MAVLINK_COMM_NUM_BUFFERS` 是 MAVLink 最大可用的通道数。通常一个通道对应一个串口。请根据需要分配。设置得越大会占用越多内存。MAVLink 默认为单片机分配 4 个通道。
 
 ## 使用 WTR Mavlink Library
 
