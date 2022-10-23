@@ -6,7 +6,7 @@ WTRobot, HITsz
 
 移植到 stm32 平台的 mavlink
 
-MAVLink 是一套消息传输协议。可以使用它方便地在单片机直接传输信息（变量、结构体等），并且有校验机制，可以检测并丢弃传输错误的包。
+MAVLink 是一套消息传输协议。可以使用它方便地在单片机之间传输信息（变量、结构体等），并且有校验机制，可以检测并丢弃传输错误的包。
 
 本库支持 MavLink V1 和 V2 版本的协议。
 
@@ -224,6 +224,12 @@ X. Y.
 - gitee: [TITHChan (tithchan) - Gitee.com](https://gitee.com/tithchan)
 
 ## 版本日志
+
+### 1.1.1
+- 更新 readme
+- 添加 .gitignore
+- 更新 pymavlink 脚本到 2.4.36 版本
+- 发现这个库直接支持 V2 协议（原本是在 V1 协议 mavlink 库上设计的）（😀）
 
 ### 1.1
 - 修复同时收发时可能的卡串口问题
