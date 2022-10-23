@@ -97,7 +97,8 @@ MAVLink 官网: <https://mavlink.io/zh/>
 
 1. 将生成的库文件添加到你的 stm32 工程中
 2. 将 `src/wtr_mavlink.c` 和 `src/wtr_mavlink.h` 添加到你的 stm32 工程中
-3. 根据实际需要，修改 `wtr_mavlink.h` 中的以下内容
+3. 对于 MDK，可能要开启 GNU 拓展
+4. 根据实际需要，修改 `wtr_mavlink.h` 中的以下内容
     ```
     // 系统 ID 和 组件 ID
     static mavlink_system_t mavlink_system = {
@@ -215,7 +216,7 @@ stm32f103 在 arm-none-eabi-gcc-10.3.1 编译器下：
 
 开启 O3 优化：2M 波特率成功收发，2.5M 波特率接收失败
 
-不开优化：1M 波特率接收失败，115200 (0.1 M) 波特率接收成功
+不开优化：1M 波特率接收失败，115200 (0.1M) 波特率接收成功
 
 ## 作者
 X. Y.
