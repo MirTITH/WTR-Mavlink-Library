@@ -8,7 +8,7 @@ WTRobot, HITsz
 
 MAVLink 是一套消息传输协议。可以使用它方便地在单片机直接传输信息（变量、结构体等），并且有校验机制，可以检测并丢弃传输错误的包。
 
-本库支持 MavLink V1 和 V2 版本。
+本库支持 MavLink V1 和 V2 版本的协议。
 
 MAVLink 官网: <https://mavlink.io/zh/>
 
@@ -16,7 +16,7 @@ MAVLink 官网: <https://mavlink.io/zh/>
 
 ### 获取 mavlink
 
-方法一：克隆或下载本仓库，里面的 `mavlink_1.0.12` 文件夹就是 1.0.12 版本的 mavlink 生成器
+方法一：克隆或下载本仓库，里面的 `mavlink_1.0.12` 文件夹就是 1.0.12 版本的 mavlink 生成器和 2.4.36 版本的 pymavlink
 
 方法二：从官方库中下载：
 
@@ -25,12 +25,19 @@ MAVLink 官网: <https://mavlink.io/zh/>
     git clone https://github.com/mavlink/mavlink.git --recursive
     ```
 2. 切换到 release 版本
-    ```
+    ```sh
     cd mavlink
-    git checkout 1.0.12
-    ```
+    # 查看有哪些版本的 mavlink 库
+    git tag
+    # 切换到你希望的版本，例如：
+    git checkout 1.0.12 
 
-> 可以输入 `git tag` 查看有哪些版本，写本文档时的最新版是 1.0.12
+    cd pymavlink
+    # 查看有哪些版本的 pymavlink 库
+    git tag
+    # 切换到你希望的版本。例如：
+    git checkout 2.4.36
+    ```
 
 ### 安装环境
 
@@ -43,9 +50,11 @@ MAVLink 官网: <https://mavlink.io/zh/>
 
 ### 生成自定义消息
 
-消息就是你要发送和接收的一组变量。
+消息就是你要发送或接收的一组变量。
 
-消息在 xml 文件中定义。mavlink 会根据 xml 文件生成对应的结构体以及收发函数。使用 mavlink 通信前需要先定义消息，通信的双方也需要有相同的消息定义。
+消息在 xml 文件中定义。mavlink 会根据 xml 文件生成对应的结构体以及收发函数。
+
+如果想在两个系统之间传输消息，那么这个消息必须在这两个系统中都定义（而且这个消息的id和内容要相同）
 
 #### 编写 `.xml` 文件
 
@@ -55,18 +64,25 @@ MAVLink 官网: <https://mavlink.io/zh/>
 
 [test.xml](examples/test.xml)
 
-> 注意：V1 版本的消息 ID 必须介于 0 到 255 之间  
-> 建议将你写的 xml 文件也放在你的工程目录中，以免以后修改时找不到之前写的文件
+> 建议将你写的 xml 文件也放在你的工程目录中，以免以后修改时找不到之前写的文件  
+
+以下是 MavLink 官方关于如何选取 id 的建议：
+
+> 对于 MAVLink 1:  
+> - 有效数字介于 0 到 255。
+> - ID 0-149 和 230-255 为common.xml保留。 语支可以使用180-229 用于自定义消息 (除非这些信息没有被其他包括语支使用)。
 > 
-> mavlink 官方有一些预定义好的消息（放在这里 [mavlink/message_definitions/v1.0](mavlink/message_definitions/v1.0)）。这些消息是官方预设的无人机通信消息，如果不玩无人机就基本上用不到。
+> 对于 MAVLink 2 :
+> - 有效数字介于0-1677215。
+> - 255以下所有值都被认为是保留的，除非报文也打算用于 MAVLink 1。 **注意** ID 在 MAVLink 1 中很宝贵！
+
+> mavlink 官方有一些预定义好的消息（放在这里 [mavlink_1.0.12/message_definitions/v1.0](mavlink_1.0.12/message_definitions/v1.0)）。这些消息是官方预设的无人机通信消息，如果不玩无人机就基本上用不到。
 
 详细语法见官方文档: 
 
 <https://mavlink.io/zh/guide/xml_schema.html>
 
 <https://mavlink.io/zh/guide/define_xml_element.html>
-
-
 
 #### 根据 xml 文件生成库文件
 
@@ -93,7 +109,7 @@ MAVLink 官网: <https://mavlink.io/zh/>
     #define MAVLINK_COMM_NUM_BUFFERS 4
     ```
 
-    MAVLink 支持多个系统互相通信。系统可以是机器人、遥控器、无人机等。一般建议为每个系统分配唯一的 `System ID`。如果一个系统上有多个单片机，建议为每个单片机分配唯一的 `Component ID`。
+    MAVLink 支持多个系统互相通信。系统可以是上位机、机器人、遥控器、无人机等。一般建议为每个系统分配唯一的 `System ID`。如果一个系统上有多个单片机，建议为每个单片机分配唯一的 `Component ID`。
 
     > 这两个 ID 只是为了区分收到的消息来自哪里，如果不需要区分，可以都取相同 ID。（但不太建议）  
     > MAVLink 原本设想的是为系统上的每个组件（比如说各种传感器）分配一个 `Component ID`，但这里的 mavlink_system 是全局变量，一个单片机不方便设置多个 `Component ID`，所以只能每个单片机分配一个 `Component ID` 了。
@@ -108,9 +124,11 @@ MAVLink 官网: <https://mavlink.io/zh/>
 
 ### 绑定通道和串口
 
-使用 mavlink 的通道前需要先绑定串口，之后对这个通道的发送和接收操作就相当于对串口的操作（串口要在 CubeMX 里先配置好）
+> mavlink 支持多通道收发，使用 mavlink 的通道前需要先绑定串口，之后对这个通道的发送和接收操作就相当于对绑定的串口的操作（串口要在 CubeMX 里先配置好）
 
-一般一个通道对应一个串口，一个通道可以同时收发，通道的数量取决于你上面定义的 `MAVLINK_COMM_NUM_BUFFERS`
+> 一般一个通道对应一个串口，一个通道可以同时收发，通道的数量取决于你在`wtr_mavlink.h`中定义的 `MAVLINK_COMM_NUM_BUFFERS`
+
+使用 `wtrMavlink_BindChannel()` 函数绑定
 
 examples:
 
@@ -119,7 +137,7 @@ wtrMavlink_BindChannel(&huart1, MAVLINK_COMM_0);
 wtrMavlink_BindChannel(&huart2, MAVLINK_COMM_1);
 ```
 
-### 发送结构体
+### 发送消息
 
 mavlink 将你自定义的消息都封装在了结构体里，一个消息对应一个结构体
 
@@ -134,11 +152,11 @@ mavlink_msg_xxx_send_struct(MAVLINK_COMM_X, &StructToBeSend);
 
 > xxx 为要发送的消息名称
 
-### 接收结构体
+### 接收消息
 
 本库采用中断接收模式，因此如果需要接收消息，必须在 CubeMX 里使能串口全局中断
 
-接收结构体需要如下操作：
+接收消息需要如下操作：
 
 1. 确保已经绑定通道和串口
 
@@ -148,7 +166,9 @@ mavlink_msg_xxx_send_struct(MAVLINK_COMM_X, &StructToBeSend);
     wtrMavlink_StartReceiveIT(MAVLINK_COMM_X);
     ```
 
-3. 在中断回调函数中：
+3. 在中断回调函数中调用`wtrMavlink_UARTRxCpltCallback()`
+
+    例如:
     ```c
     void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     {
@@ -161,7 +181,7 @@ mavlink_msg_xxx_send_struct(MAVLINK_COMM_X, &StructToBeSend);
 
     ```c
     /**
-     * @brief 接收到完整消息且校验通过后会调用这个函数。在这个函数里调用解码函数就可以向结构体写入收到的数据
+     * @brief 接收到完整消息且校验通过后会调用这个函数。在这个函数里调用解码函数就可以向结构体写入收到的消息
      *
      * @param msg 接收到的消息
      * @return
