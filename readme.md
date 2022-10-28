@@ -62,11 +62,11 @@ MAVLink 官网: <https://mavlink.io/zh/>
 
 [wtr_mavlink_demo.xml](examples/stm32f103cbt6/UserCode/mavlink/wtr_mavlink_demo.xml)
 
-[test.xml](examples/test.xml)
+[test.xml](mavlink_1.0.12/message_definitions/v1.0/test.xml)
 
 > 建议将你写的 xml 文件也放在你的工程目录中，以免以后修改时找不到之前写的文件  
 
-以下是 MavLink 官方关于如何选取 id 的建议：
+以下是 MavLink 官方关于如何选取消息 id 的建议：
 
 > 对于 MAVLink 1:  
 > - 有效数字介于 0 到 255。
