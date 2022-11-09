@@ -1,9 +1,12 @@
 /**
  * @file wtr_mavlink.h
  * @author X. Y.
- * @brief 移植到 stm32 的 mavlink（只需要包含这个头文件就够了）
- * @version 1.1
- * @date 2022-09-23
+ * @brief 移植到 stm32 的 mavlink
+ * @note 由于本文件对 mavlink 库中的一些宏进行了配置，
+ *       使用本库只需要包含此头文件即可，不要再包含其他 mavlink 相关头文件，
+ *       否则可能出现意想不到的问题。
+ * @version 1.2
+ * @date 2022-11-09
  *
  * @copyright Copyright (c) 2022
  *
@@ -61,6 +64,11 @@ static inline void wtrMavlink_SEND_UART_BYTES(mavlink_channel_t chan, const uint
     if (chan < MAVLINK_COMM_NUM_BUFFERS) {
         while (HAL_UART_Transmit(hMAVLink[chan].huart, (uint8_t *)buf, len, HAL_MAX_DELAY) == HAL_BUSY)
             ;
+    } else {
+        // 如果卡在这里，说明 chan 超过了最大值
+        // 请检查通道号是否给错
+        // 如果当前通道数量不够用，请增大 wtr_mavlink.h 中 MAVLINK_COMM_NUM_BUFFERS 的值
+        while (1) {}
     }
 }
 #define MAVLINK_SEND_UART_BYTES(chan, buf, len) wtrMavlink_SEND_UART_BYTES(chan, buf, len)
@@ -69,13 +77,29 @@ static inline void wtrMavlink_SEND_UART_BYTES(mavlink_channel_t chan, const uint
 #define MAVLINK_GET_CHANNEL_STATUS
 static inline mavlink_status_t *mavlink_get_channel_status(uint8_t chan)
 {
-    return &hMAVLink[chan].status;
+    if (chan < MAVLINK_COMM_NUM_BUFFERS) {
+        return &hMAVLink[chan].status;
+    } else {
+        // 如果卡在这里，说明 chan 超过了最大值
+        // 请检查通道号是否给错
+        // 如果当前通道数量不够用，请增大 wtr_mavlink.h 中 MAVLINK_COMM_NUM_BUFFERS 的值
+        while (1) {}
+        return NULL;
+    }
 }
 
 #define MAVLINK_GET_CHANNEL_BUFFER
 static inline mavlink_message_t *mavlink_get_channel_buffer(uint8_t chan)
 {
-    return &hMAVLink[chan].msg;
+    if (chan < MAVLINK_COMM_NUM_BUFFERS) {
+        return &hMAVLink[chan].msg;
+    } else {
+        // 如果卡在这里，说明 chan 超过了最大值
+        // 请检查通道号是否给错
+        // 如果当前通道数量不够用，请增大 wtr_mavlink.h 中 MAVLINK_COMM_NUM_BUFFERS 的值
+        while (1) {}
+        return NULL;
+    }
 }
 
 #include "mavlink.h"
@@ -163,11 +187,18 @@ static inline HAL_StatusTypeDef WTR_UART_Receive_IT(UART_HandleTypeDef *huart, u
  */
 static inline void wtrMavlink_UARTRxCpltCallback(UART_HandleTypeDef *huart, mavlink_channel_t chan)
 {
-    if (huart == hMAVLink[chan].huart) {
-        if (mavlink_parse_char(chan, hMAVLink[chan].rx_buffer, &(hMAVLink[chan].msg), &(hMAVLink[chan].status))) {
-            wtrMavlink_MsgRxCpltCallback(&(hMAVLink[chan].msg));
+    if (chan < MAVLINK_COMM_NUM_BUFFERS) {
+        if (huart == hMAVLink[chan].huart) {
+            if (mavlink_parse_char(chan, hMAVLink[chan].rx_buffer, &(hMAVLink[chan].msg), &(hMAVLink[chan].status))) {
+                wtrMavlink_MsgRxCpltCallback(&(hMAVLink[chan].msg));
+            }
+            WTR_UART_Receive_IT(huart, &(hMAVLink[chan].rx_buffer), 1);
         }
-        WTR_UART_Receive_IT(huart, &(hMAVLink[chan].rx_buffer), 1);
+    } else {
+        // 如果卡在这里，说明 chan 超过了最大值
+        // 请检查通道号是否给错
+        // 如果当前通道数量不够用，请增大 wtr_mavlink.h 中 MAVLINK_COMM_NUM_BUFFERS 的值
+        while (1) {}
     }
 }
 
